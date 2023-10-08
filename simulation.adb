@@ -77,7 +77,7 @@ procedure Simulation is
    task body Consumer is
       subtype Consumption_Time_Range is Integer range 4 .. 8;
       package Random_Consumption is new
-	Ada.Numerics.Discrete_Random(Consumption_Time_Range);
+        Ada.Numerics.Discrete_Random(Consumption_Time_Range);
       G: Random_Consumption.Generator;	--  random number generator (time)
       G2: Random_Assembly.Generator;	--  also (assemblies)
       Consumer_Nb: Consumer_Type;
@@ -90,20 +90,20 @@ procedure Simulation is
    begin
       accept Start(Consumer_Number: in Consumer_Type;
 		     Consumption_Time: in Integer) do
-	 Random_Consumption.Reset(G);	--  ustaw generator
-	 Random_Assembly.Reset(G2);	--  też
-	 Consumer_Nb := Consumer_Number;
-	 Consumption := Consumption_Time;
+         Random_Consumption.Reset(G);	--  ustaw generator
+         Random_Assembly.Reset(G2);	--  też
+         Consumer_Nb := Consumer_Number;
+         Consumption := Consumption_Time;
       end Start;
       Put_Line("Started consumer " & Consumer_Name(Consumer_Nb));
       loop
-	 delay Duration(Random_Consumption.Random(G)); --  simulate consumption
-	 Assembly_Type := Random_Assembly.Random(G2);
-	 -- take an assembly for consumption
-	 Warehouse.Deliver(Assembly_Type, Assembly_Number);
-	 Put_Line(Consumer_Name(Consumer_Nb) & ": taken assembly " &
-		    Assembly_Name(Assembly_Type) & " number " &
-		    Integer'Image(Assembly_Number));
+         delay Duration(Random_Consumption.Random(G)); --  simulate consumption
+         Assembly_Type := Random_Assembly.Random(G2);
+         -- take an assembly for consumption
+         Warehouse.Deliver(Assembly_Type, Assembly_Number);
+         Put_Line(Consumer_Name(Consumer_Nb) & ": taken assembly " &
+                    Assembly_Name(Assembly_Type) & " number " &
+                    Integer'Image(Assembly_Number));
       end loop;
    end Consumer;
 
@@ -111,85 +111,80 @@ procedure Simulation is
       Storage_Capacity: constant Integer := 30;
       type Storage_type is array (Product_Type) of Integer;
       Storage: Storage_type
-	:= (0, 0, 0, 0, 0);
+        := (0, 0, 0, 0, 0);
       Assembly_Content: array(Assembly_Type, Product_Type) of Integer
-	:= ((2, 1, 2, 1, 2),
-	    (2, 2, 0, 1, 0),
-	    (1, 1, 2, 0, 1));
+        := ((2, 1, 2, 1, 2),
+            (2, 2, 0, 1, 0),
+            (1, 1, 2, 0, 1));
       Max_Assembly_Content: array(Product_Type) of Integer;
       Assembly_Number: array(Assembly_Type) of Integer
-	:= (1, 1, 1);
+        := (1, 1, 1);
       In_Storage: Integer := 0;
 
       procedure Setup_Variables is
       begin
-	 for W in Product_Type loop
-	    Max_Assembly_Content(W) := 0;
-	    for Z in Assembly_Type loop
-	       if Assembly_Content(Z, W) > Max_Assembly_Content(W) then
-		  Max_Assembly_Content(W) := Assembly_Content(Z, W);
-	       end if;
-	    end loop;
-	 end loop;
+         for W in Product_Type loop
+            Max_Assembly_Content(W) := 0;
+            for Z in Assembly_Type loop
+               if Assembly_Content(Z, W) > Max_Assembly_Content(W) then
+                  Max_Assembly_Content(W) := Assembly_Content(Z, W);
+               end if;
+            end loop;
+         end loop;
       end Setup_Variables;
 
       function Can_Accept(Product: Product_Type) return Boolean is
-	 Free: Integer;		--  free room in the storage
-	 -- how many products are for production of arbitrary assembly
-	 Lacking: array(Product_Type) of Integer;
-	 -- how much room is needed in storage to produce arbitrary assembly
-	 Lacking_room: Integer;
-	 MP: Boolean;			--  can accept
+         Free: Integer;		--  free room in the storage
+         -- how many products are for production of arbitrary assembly
+         Lacking: array(Product_Type) of Integer;
+         -- how much room is needed in storage to produce arbitrary assembly
+         Lacking_room: Integer;
+         MP: Boolean;			--  can accept
       begin
-	 if In_Storage >= Storage_Capacity then
-	    return False;
-	 end if;
-	 -- There is free room in the storage
-	 Free := Storage_Capacity - In_Storage;
-	 MP := True;
-	 for W in Product_Type loop
-	    if Storage(W) < Max_Assembly_Content(W) then
-	       MP := False;
-	    end if;
-	 end loop;
-	 if MP then
-	    return True;		--  storage has products for arbitrary
-	       				--  assembly
-	 end if;
-	 if Integer'Max(0, Max_Assembly_Content(Product) - Storage(Product)) > 0 then
-	    -- exactly this product lacks
-	    return True;
-	 end if;
-	 Lacking_room := 1;			--  insert current product
-	 for W in Product_Type loop
-	    Lacking(W) := Integer'Max(0, Max_Assembly_Content(W) - Storage(W));
-	    Lacking_room := Lacking_room + Lacking(W);
-	 end loop;
-	 if Free >= Lacking_room then
-	    -- there is enough room in storage for arbitrary assembly
-	    return True;
-	 else
-	    -- no room for this product
-	    return False;
-	 end if;
+         if In_Storage >= Storage_Capacity then
+            return False;
+         end if;
+         -- There is free room in the storage
+         Free := Storage_Capacity - In_Storage;
+         MP := True;
+         for W in Product_Type loop
+            if Storage(W) < Max_Assembly_Content(W) then
+               MP := False;
+            end if;
+         end loop;
+         if MP then
+            return True;		--  storage has products for arbitrary
+            --  assembly
+         end if;
+         if Integer'Max(0, Max_Assembly_Content(Product) - Storage(Product)) > 0 then
+            -- exactly this product lacks
+            return True;
+         end if;
+         Lacking_room := 1;			--  insert current product
+         for W in Product_Type loop
+            Lacking(W) := Integer'Max(0, Max_Assembly_Content(W) - Storage(W));
+            Lacking_room := Lacking_room + Lacking(W);
+         end loop;
+         
+         return Free >= Lacking_room;
       end Can_Accept;
 
       function Can_Deliver(Assembly: Assembly_Type) return Boolean is
       begin
-	 for W in Product_Type loop
-	    if Storage(W) < Assembly_Content(Assembly, W) then
-	       return False;
-	    end if;
-	 end loop;
-	 return True;
+         for W in Product_Type loop
+            if Storage(W) < Assembly_Content(Assembly, W) then
+               return False;
+            end if;
+         end loop;
+         return True;
       end Can_Deliver;
 
       procedure Storage_Contents is
       begin
-	 for W in Product_Type loop
-	    Put_Line("Storage contents: " & Integer'Image(Storage(W)) & " "
-		       & Product_Name(W));
-	 end loop;
+         for W in Product_Type loop
+            Put_Line("Storage contents: " & Integer'Image(Storage(W)) & " "
+                     & Product_Name(W));
+         end loop;
       end Storage_Contents;
 
    begin
