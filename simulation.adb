@@ -1,5 +1,5 @@
--- A skeleton of a program for an assignment in programming languages
--- The students should rename the tasks of producers, consumers, and the buffer
+-- A skeleton of a program for an assignment in programming languages The
+-- students should rename the tasks of producers, consumers, and the buffer
 -- Then, they should change them so that they would fit their assignments
 -- They should also complete the code with constructions that lack there
 with Ada.Text_IO; use Ada.Text_IO;
@@ -14,8 +14,9 @@ procedure Simulation is
    subtype Product_Type is Integer range 1 .. Number_Of_Products;
    subtype Assembly_Type is Integer range 1 .. Number_Of_Assemblies;
    subtype Consumer_Type is Integer range 1 .. Number_Of_Consumers;
-   Product_Name: constant array (Product_Type) of String(1 .. 8)
-     := ("Product1", "Product2", "Product3", "Product4", "Product5");
+   Product_Name: constant array (Product_Type) of String(1 .. 11)
+     := ("Michelin   ", "Continental", "Carlisle   ",
+         "Panasonic  ", "Sumitomo   ");
    Assembly_Name: constant array (Assembly_Type) of String(1 .. 9)
      := ("Assembly1", "Assembly2", "Assembly3");
    package Random_Assembly is new
@@ -43,33 +44,33 @@ procedure Simulation is
       entry Deliver(Assembly: in Assembly_Type; Number: out Integer);
    end Buffer;
 
-   P: array ( 1 .. Number_Of_Products ) of Producer;
-   K: array ( 1 .. Number_Of_Consumers ) of Consumer;
-   B: Buffer;
+   Producers: array ( 1 .. Number_Of_Products ) of Producer;
+   Consumers: array ( 1 .. Number_Of_Consumers ) of Consumer;
+   Warehouse: Buffer;
 
    task body Producer is
       subtype Production_Time_Range is Integer range 3 .. 6;
       package Random_Production is new
-	Ada.Numerics.Discrete_Random(Production_Time_Range);
+      Ada.Numerics.Discrete_Random(Production_Time_Range);
       G: Random_Production.Generator;	--  generator liczb losowych
       Product_Type_Number: Integer;
       Product_Number: Integer;
       Production: Integer;
    begin
       accept Start(Product: in Product_Type; Production_Time: in Integer) do
-	 Random_Production.Reset(G);	--  start random number generator
-	 Product_Number := 1;
-	 Product_Type_Number := Product;
-	 Production := Production_Time;
+         Random_Production.Reset(G);	--  start random number generator
+         Product_Number := 1;
+         Product_Type_Number := Product;
+         Production := Production_Time;
       end Start;
       Put_Line("Started producer of " & Product_Name(Product_Type_Number));
       loop
-	 delay Duration(Random_Production.Random(G)); --  symuluj produkcję
-	 Put_Line("Produced product " & Product_Name(Product_Type_Number)
-		    & " number "  & Integer'Image(Product_Number));
-	 -- Accept for storage
-	 B.Take(Product_Type_Number, Product_Number);
-	 Product_Number := Product_Number + 1;
+         delay Duration(Random_Production.Random(G)); --  symuluj produkcję
+         Put_Line("Produced product " & Product_Name(Product_Type_Number)
+                  & " number "  & Integer'Image(Product_Number));
+         -- Accept for storage
+         Warehouse.Take(Product_Type_Number, Product_Number);
+         Product_Number := Product_Number + 1;
       end loop;
    end Producer;
 
@@ -99,7 +100,7 @@ procedure Simulation is
 	 delay Duration(Random_Consumption.Random(G)); --  simulate consumption
 	 Assembly_Type := Random_Assembly.Random(G2);
 	 -- take an assembly for consumption
-	 B.Deliver(Assembly_Type, Assembly_Number);
+	 Warehouse.Deliver(Assembly_Type, Assembly_Number);
 	 Put_Line(Consumer_Name(Consumer_Nb) & ": taken assembly " &
 		    Assembly_Name(Assembly_Type) & " number " &
 		    Integer'Image(Assembly_Number));
@@ -228,10 +229,10 @@ procedure Simulation is
    
 begin
    for I in 1 .. Number_Of_Products loop
-      P(I).Start(I, 10);
+      Producers(I).Start(I, 10);
    end loop;
    for J in 1 .. Number_Of_Consumers loop
-      K(J).Start(J,12);
+      Consumers(J).Start(J,12);
    end loop;
 end Simulation;
 
