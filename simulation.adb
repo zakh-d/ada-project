@@ -191,34 +191,34 @@ procedure Simulation is
       Put_Line("Buffer started");
       Setup_Variables;
       loop
-	 accept Take(Product: in Product_Type; Number: in Integer) do
-	   if Can_Accept(Product) then
-	      Put_Line("Accepted product " & Product_Name(Product) & " number " &
-		Integer'Image(Number));
-	      Storage(Product) := Storage(Product) + 1;
-	      In_Storage := In_Storage + 1;
-  	   else
-	      Put_Line("Rejected product " & Product_Name(Product) & " number " &
-		    Integer'Image(Number));
-	   end if;
-	 end Take;
-	 Storage_Contents;
-	 accept Deliver(Assembly: in Assembly_Type; Number: out Integer) do
-	    if Can_Deliver(Assembly) then
-	       Put_Line("Delivered assembly " & Assembly_Name(Assembly) & " number " &
-			  Integer'Image(Assembly_Number(Assembly)));
-	       for W in Product_Type loop
-		  Storage(W) := Storage(W) - Assembly_Content(Assembly, W);
-		  In_Storage := In_Storage - Assembly_Content(Assembly, W);
-	       end loop;
-	       Number := Assembly_Number(Assembly);
-	       Assembly_Number(Assembly) := Assembly_Number(Assembly) + 1;
-	    else
-	       Put_Line("Lacking products for assembly " & Assembly_Name(Assembly));
-	       Number := 0;
-	    end if;
-	 end Deliver;
-	 Storage_Contents;
+         accept Take(Product: in Product_Type; Number: in Integer) do
+            if Can_Accept(Product) then
+               Put_Line("Accepted product " & Product_Name(Product) & " number " &
+                          Integer'Image(Number));
+               Storage(Product) := Storage(Product) + 1;
+               In_Storage := In_Storage + 1;
+            else
+               Put_Line("Rejected product " & Product_Name(Product) & " number " &
+                          Integer'Image(Number));
+            end if;
+         end Take;
+         Storage_Contents;
+         accept Deliver(Assembly: in Assembly_Type; Number: out Integer) do
+            if Can_Deliver(Assembly) then
+               Put_Line("Delivered assembly " & Assembly_Name(Assembly) & " number " &
+                          Integer'Image(Assembly_Number(Assembly)));
+               for W in Product_Type loop
+                  Storage(W) := Storage(W) - Assembly_Content(Assembly, W);
+                  In_Storage := In_Storage - Assembly_Content(Assembly, W);
+               end loop;
+               Number := Assembly_Number(Assembly);
+               Assembly_Number(Assembly) := Assembly_Number(Assembly) + 1;
+            else
+               Put_Line("Lacking products for assembly " & Assembly_Name(Assembly));
+               Number := 0;
+            end if;
+         end Deliver;
+         Storage_Contents;
       end loop;
    end Buffer;
    
