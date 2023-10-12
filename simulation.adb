@@ -17,8 +17,8 @@ procedure Simulation is
    Product_Name: constant array (Product_Type) of String(1 .. 15)
      := ("Tire 205/55R 16", "Tire 195/60R 17", "Tire 215/50R 16",
          "Tire 205/55R 18", "Tire 225/55R 17");
-   Assembly_Name: constant array (Assembly_Type) of String(1 .. 9)
-     := ("Assembly1", "Assembly2", "Assembly3");
+   Assembly_Name: constant array (Assembly_Type) of String(1 .. 14)
+     := ("Set of Tires 1", "Set of Tires 2", "Set of Tires 3");
    package Random_Assembly is new
      Ada.Numerics.Discrete_Random(Assembly_Type);
    type My_Str is new String(1 ..256);
