@@ -17,6 +17,8 @@ procedure Simulation is
    Product_Name: constant array (Product_Type) of String(1 .. 15)
      := ("Tire 205/55R 16", "Tire 195/60R 17", "Tire 215/50R 16",
          "Tire 205/55R 18", "Tire 225/55R 17");
+   Production_Active: array (Product_Type) of Boolean
+     := (True, True, True, True, True);
    Assembly_Name: constant array (Assembly_Type) of String(1 .. 14)
      := ("Set of Tires 1", "Set of Tires 2", "Set of Tires 3");
    package Random_Assembly is new
@@ -39,7 +41,7 @@ procedure Simulation is
    -- In the Buffer, products are assemblied into an assembly
    task type Buffer is
       -- Accept a product to the storage provided there is a room for it
-      entry Take(Product: in Product_Type; Number: in Integer);
+      entry Take(Product: in Product_Type; Number: in Integer; Accepted: out Boolean);
       -- Deliver an assembly provided there are enough products for it
       entry Deliver(Assembly: in Assembly_Type; Number: out Integer);
    end Buffer;
@@ -56,6 +58,7 @@ procedure Simulation is
       Product_Type_Number: Integer;
       Product_Number: Integer;
       Production: Integer;
+      Accepted: Boolean := True;
    begin
       accept Start(Product: in Product_Type; Production_Time: in Integer) do
          Random_Production.Reset(G);	--  start random number generator
@@ -66,11 +69,19 @@ procedure Simulation is
       Put_Line("Started producer of " & Product_Name(Product_Type_Number));
       loop
          delay Duration(Random_Production.Random(G)); --  symuluj produkcję
+         if Accepted then
          Put_Line("Produced product " & Product_Name(Product_Type_Number)
                   & " number "  & Integer'Image(Product_Number));
+         else
+            Put_Line("Sending product " & Product_Name(Product_Type_Number)
+                     & " number "  & Integer'Image(Product_Number)
+                    & " one more time");
+         end if;
          -- Accept for storage
-         Warehouse.Take(Product_Type_Number, Product_Number);
-         Product_Number := Product_Number + 1;
+         Warehouse.Take(Product_Type_Number, Product_Number, Accepted);
+         if Accepted then
+            Product_Number := Product_Number + 1;
+         end if;
       end loop;
    end Producer;
 
@@ -86,7 +97,8 @@ procedure Simulation is
       Assembly_Type: Integer;
       Consumer_Name: constant array (1 .. Number_Of_Consumers)
 	of String(1 .. 10)
-	:= ("CarService", "CarTrack  ");
+        := ("CarService", "CarTrack  ");
+      Waiting_For_Assembly: Boolean := False;
    begin
       accept Start(Consumer_Number: in Consumer_Type;
 		     Consumption_Time: in Integer) do
@@ -98,17 +110,29 @@ procedure Simulation is
       Put_Line("Started consumer " & Consumer_Name(Consumer_Nb));
       loop
          delay Duration(Random_Consumption.Random(G)); --  simulate consumption
-         Assembly_Type := Random_Assembly.Random(G2);
+         if not Waiting_For_Assembly then
+            Assembly_Type := Random_Assembly.Random(G2);
+         end if;
+           
          -- take an assembly for consumption
          Warehouse.Deliver(Assembly_Type, Assembly_Number);
+
+		if (Assembly_Number = 0) then
+            Put_Line(Consumer_Name(Consumer_Nb) & " should wait for his assembly: "
+                     & Assembly_Name(Assembly_Type) & " to be prepared");
+           Waiting_For_Assembly := True;
+			delay Duration(5.0);
+		else
          Put_Line(Consumer_Name(Consumer_Nb) & ": taken assembly " &
                     Assembly_Name(Assembly_Type) & " number " &
                     Integer'Image(Assembly_Number));
+          Waiting_For_Assembly := False;
+		end if;
       end loop;
    end Consumer;
 
    task body Buffer is
-      Storage_Capacity: constant Integer := 30;
+      Storage_Capacity: constant Integer := 8;
       type Storage_type is array (Product_Type) of Integer;
       Storage: Storage_type
         := (0, 0, 0, 0, 0);
@@ -172,35 +196,37 @@ procedure Simulation is
       Put_Line("Buffer started");
       Setup_Variables;
       loop
-         accept Take(Product: in Product_Type; Number: in Integer) do
-            if Can_Accept(Product) then
-               Put_Line("Accepted product " & Product_Name(Product) & " number " &
-                          Integer'Image(Number));
-               Storage(Product) := Storage(Product) + 1;
+		accept Take(Product: in Product_Type; Number: in Integer; Accepted: out Boolean) do
+			if Can_Accept(Product) then
+				Put_Line("Accepted product " & Product_Name(Product) & " number " &
+							Integer'Image(Number));
+				Storage(Product) := Storage(Product) + 1;
                In_Storage := In_Storage + 1;
-            else
-               Put_Line("Rejected product " & Product_Name(Product) & " number " &
-                          Integer'Image(Number));
-            end if;
-         end Take;
-         Storage_Contents;
-         accept Deliver(Assembly: in Assembly_Type; Number: out Integer) do
-            if Can_Deliver(Assembly) then
-               Put_Line("Delivered assembly " & Assembly_Name(Assembly) & " number " &
-                          Integer'Image(Assembly_Number(Assembly)));
-               for W in Product_Type loop
-                  Storage(W) := Storage(W) - Assembly_Content(Assembly, W);
-                  In_Storage := In_Storage - Assembly_Content(Assembly, W);
-               end loop;
-               Number := Assembly_Number(Assembly);
-               Assembly_Number(Assembly) := Assembly_Number(Assembly) + 1;
-            else
-               Put_Line("Lacking products for assembly " & Assembly_Name(Assembly));
-               -- TODO: add consumer to waiting queue 
-               Number := 0;
-            end if;
-         end Deliver;
-         Storage_Contents;
+               Accepted := True;
+			else
+				Put_Line("Rejected product " & Product_Name(Product) & " number " &
+               Integer'Image(Number));
+               Accepted := False;
+			end if;
+		end Take;
+		Storage_Contents;
+		accept Deliver(Assembly: in Assembly_Type; Number: out Integer) do
+			if Can_Deliver(Assembly) then
+				Put_Line("Delivered assembly " & Assembly_Name(Assembly) & " number " &
+							Integer'Image(Assembly_Number(Assembly)));
+				for W in Product_Type loop
+					Storage(W) := Storage(W) - Assembly_Content(Assembly, W);
+					In_Storage := In_Storage - Assembly_Content(Assembly, W);
+				end loop;
+				Number := Assembly_Number(Assembly);
+				Assembly_Number(Assembly) := Assembly_Number(Assembly) + 1;
+			else
+				Put_Line("Lacking products for assembly " & Assembly_Name(Assembly));
+				-- TODO: add consumer to waiting queue 
+				Number := 0;
+			end if;
+		end Deliver;
+		Storage_Contents;             
       end loop;
    end Buffer;
    
