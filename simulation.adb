@@ -116,57 +116,38 @@ procedure Simulation is
         := ((2, 1, 2, 1, 2),
             (2, 2, 0, 1, 0),
             (1, 1, 2, 0, 1));
-      Max_Assembly_Content: array(Product_Type) of Integer;
+      -- 5 4 4 2 3 sum 18
+      -- 5/18 4/18 4/18 2/18 3/18
+      Assembly_Proportion: array(Product_Type) of Integer;
       Assembly_Number: array(Assembly_Type) of Integer
         := (1, 1, 1);
       In_Storage: Integer := 0;
-
+      Sum_Of_All_Assemblies: Integer := 0;
+      
       procedure Setup_Variables is
       begin
+
+   
          for W in Product_Type loop
-            Max_Assembly_Content(W) := 0;
+            Assembly_Proportion(W) := 0;
             for Z in Assembly_Type loop
-               if Assembly_Content(Z, W) > Max_Assembly_Content(W) then
-                  Max_Assembly_Content(W) := Assembly_Content(Z, W);
-               end if;
+               Assembly_Proportion(W) := Assembly_Proportion(W) + Assembly_Content(Z, W);
+               Sum_Of_All_Assemblies := Sum_Of_All_Assemblies + Assembly_Content(Z, W);
             end loop;
+         end loop;
+         
+         Put_Line("Warehouse can accept max: ");      
+         for I in Product_Type loop
+            Assembly_Proportion(I) := Assembly_Proportion(I) * Storage_Capacity / Sum_Of_All_Assemblies;
+            Put_Line(Integer'Image(Assembly_Proportion(I)) & " pts of " & Product_Name(I));
          end loop;
       end Setup_Variables;
 
       function Can_Accept(Product: Product_Type) return Boolean is
-         Free: Integer;		--  free room in the storage
-         -- how many products are for production of arbitrary assembly
-         Lacking: array(Product_Type) of Integer;
-         -- how much room is needed in storage to produce arbitrary assembly
-         Lacking_room: Integer;
-         MP: Boolean;			--  can accept
       begin
-         if In_Storage >= Storage_Capacity then
-            return False;
-         end if;
-         -- There is free room in the storage
-         Free := Storage_Capacity - In_Storage;
-         MP := True;
-         for W in Product_Type loop
-            if Storage(W) < Max_Assembly_Content(W) then
-               MP := False;
-            end if;
-         end loop;
-         if MP then
-            return True;		--  storage has products for arbitrary
-            --  assembly
-         end if;
-         if Integer'Max(0, Max_Assembly_Content(Product) - Storage(Product)) > 0 then
-            -- exactly this product lacks
-            return True;
-         end if;
-         Lacking_room := 1;			--  insert current product
-         for W in Product_Type loop
-            Lacking(W) := Integer'Max(0, Max_Assembly_Content(W) - Storage(W));
-            Lacking_room := Lacking_room + Lacking(W);
-         end loop;
          
-         return Free >= Lacking_room;
+         return Assembly_Proportion(Product) > Storage(Product);
+         
       end Can_Accept;
 
       function Can_Deliver(Assembly: Assembly_Type) return Boolean is
@@ -215,6 +196,7 @@ procedure Simulation is
                Assembly_Number(Assembly) := Assembly_Number(Assembly) + 1;
             else
                Put_Line("Lacking products for assembly " & Assembly_Name(Assembly));
+               -- TODO: add consumer to waiting queue 
                Number := 0;
             end if;
          end Deliver;
