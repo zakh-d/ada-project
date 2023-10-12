@@ -14,9 +14,9 @@ procedure Simulation is
    subtype Product_Type is Integer range 1 .. Number_Of_Products;
    subtype Assembly_Type is Integer range 1 .. Number_Of_Assemblies;
    subtype Consumer_Type is Integer range 1 .. Number_Of_Consumers;
-   Product_Name: constant array (Product_Type) of String(1 .. 11)
-     := ("Michelin   ", "Continental", "Carlisle   ",
-         "Panasonic  ", "Sumitomo   ");
+   Product_Name: constant array (Product_Type) of String(1 .. 15)
+     := ("Tire 205/55R 16", "Tire 195/60R 17", "Tire 215/50R 16",
+         "Tire 205/55R 18", "Tire 225/55R 17");
    Assembly_Name: constant array (Assembly_Type) of String(1 .. 9)
      := ("Assembly1", "Assembly2", "Assembly3");
    package Random_Assembly is new
@@ -85,8 +85,8 @@ procedure Simulation is
       Consumption: Integer;
       Assembly_Type: Integer;
       Consumer_Name: constant array (1 .. Number_Of_Consumers)
-	of String(1 .. 9)
-	:= ("Consumer1", "Consumer2");
+	of String(1 .. 10)
+	:= ("CarService", "CarTrack  ");
    begin
       accept Start(Consumer_Number: in Consumer_Type;
 		     Consumption_Time: in Integer) do
