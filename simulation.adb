@@ -78,7 +78,13 @@ procedure Simulation is
                     & " one more time");
          end if;
          -- Accept for storage
-         Warehouse.Take(Product_Type_Number, Product_Number, Accepted);
+         select
+            Warehouse.Take(Product_Type_Number, Product_Number, Accepted);
+         else
+            Put_Line("Warehouse is not ready to take product at the moment");
+            Accepted := False;
+         end select;
+         
          if Accepted then
             Product_Number := Product_Number + 1;
          end if;
@@ -115,7 +121,13 @@ procedure Simulation is
          end if;
            
          -- take an assembly for consumption
-         Warehouse.Deliver(Assembly_Type, Assembly_Number);
+         select
+            Warehouse.Deliver(Assembly_Type, Assembly_Number);
+         else
+            Put_Line("Warehouse is not ready no process any delivery");
+            Assembly_Number := 0;
+         end select;
+         
 
 		if (Assembly_Number = 0) then
             Put_Line(Consumer_Name(Consumer_Nb) & " should wait for his assembly: "
@@ -132,7 +144,7 @@ procedure Simulation is
    end Consumer;
 
    task body Buffer is
-      Storage_Capacity: constant Integer := 8;
+      Storage_Capacity: constant Integer := 18;
       type Storage_type is array (Product_Type) of Integer;
       Storage: Storage_type
         := (0, 0, 0, 0, 0);
@@ -165,6 +177,9 @@ procedure Simulation is
             Assembly_Proportion(I) := Assembly_Proportion(I) * Storage_Capacity / Sum_Of_All_Assemblies;
             Put_Line(Integer'Image(Assembly_Proportion(I)) & " pts of " & Product_Name(I));
          end loop;
+         
+         
+         
       end Setup_Variables;
 
       function Can_Accept(Product: Product_Type) return Boolean is
@@ -183,6 +198,29 @@ procedure Simulation is
          end loop;
          return True;
       end Can_Deliver;
+      
+      function Is_Enough_For_Any_Assembly return Boolean is
+         Any: array(Assembly_Type) of Boolean;
+      begin
+         
+         for A in Assembly_Type loop
+            Any(A) := True;
+            for P in Product_Type loop
+               if Storage(P) < Assembly_Content(A, P) then
+                  Any(A) := False;
+               end if;
+            end loop;            
+         end loop;
+         
+         for A in Assembly_Type loop
+            if Any(A) then 
+               return True;
+            end if;
+         end loop;
+         
+         return False;
+      end Is_Enough_For_Any_Assembly;
+      
 
       procedure Storage_Contents is
       begin
@@ -196,37 +234,43 @@ procedure Simulation is
       Put_Line("Buffer started");
       Setup_Variables;
       loop
-		accept Take(Product: in Product_Type; Number: in Integer; Accepted: out Boolean) do
-			if Can_Accept(Product) then
-				Put_Line("Accepted product " & Product_Name(Product) & " number " &
-							Integer'Image(Number));
-				Storage(Product) := Storage(Product) + 1;
-               In_Storage := In_Storage + 1;
-               Accepted := True;
-			else
-				Put_Line("Rejected product " & Product_Name(Product) & " number " &
-               Integer'Image(Number));
-               Accepted := False;
-			end if;
-		end Take;
-		Storage_Contents;
-		accept Deliver(Assembly: in Assembly_Type; Number: out Integer) do
-			if Can_Deliver(Assembly) then
-				Put_Line("Delivered assembly " & Assembly_Name(Assembly) & " number " &
-							Integer'Image(Assembly_Number(Assembly)));
-				for W in Product_Type loop
-					Storage(W) := Storage(W) - Assembly_Content(Assembly, W);
-					In_Storage := In_Storage - Assembly_Content(Assembly, W);
-				end loop;
-				Number := Assembly_Number(Assembly);
-				Assembly_Number(Assembly) := Assembly_Number(Assembly) + 1;
-			else
-				Put_Line("Lacking products for assembly " & Assembly_Name(Assembly));
-				-- TODO: add consumer to waiting queue 
-				Number := 0;
-			end if;
-		end Deliver;
-		Storage_Contents;             
+         select 
+            when In_Storage < Storage_Capacity =>
+            accept Take(Product: in Product_Type; Number: in Integer; Accepted: out Boolean) do
+               if Can_Accept(Product) then
+                  Put_Line("Accepted product " & Product_Name(Product) & " number " &
+                             Integer'Image(Number));
+                  Storage(Product) := Storage(Product) + 1;
+                  In_Storage := In_Storage + 1;
+                  Accepted := True;
+               else
+                  Put_Line("Rejected product " & Product_Name(Product) & " number " &
+                             Integer'Image(Number));
+                  Accepted := False;
+               end if;
+            end Take;
+            Storage_Contents;
+         or
+            when Is_Enough_For_Any_Assembly =>
+            accept Deliver(Assembly: in Assembly_Type; Number: out Integer) do
+               if Can_Deliver(Assembly) then
+                  Put_Line("Delivered assembly " & Assembly_Name(Assembly) & " number " &
+                             Integer'Image(Assembly_Number(Assembly)));
+                  for W in Product_Type loop
+                     Storage(W) := Storage(W) - Assembly_Content(Assembly, W);
+                     In_Storage := In_Storage - Assembly_Content(Assembly, W);
+                  end loop;
+                  Number := Assembly_Number(Assembly);
+                  Assembly_Number(Assembly) := Assembly_Number(Assembly) + 1;
+               else
+                  Put_Line("Lacking products for assembly " & Assembly_Name(Assembly));
+                  -- TODO: add consumer to waiting queue 
+                  Number := 0;
+               end if;
+            end Deliver;
+            Storage_Contents;   
+         end select;
+         
       end loop;
    end Buffer;
    
