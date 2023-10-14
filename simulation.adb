@@ -144,7 +144,7 @@ procedure Simulation is
    end Consumer;
 
    task body Buffer is
-      Storage_Capacity: constant Integer := 18;
+      Storage_Capacity: constant Integer := 30;
       type Storage_type is array (Product_Type) of Integer;
       Storage: Storage_type
         := (0, 0, 0, 0, 0);
@@ -158,9 +158,10 @@ procedure Simulation is
       Assembly_Number: array(Assembly_Type) of Integer
         := (1, 1, 1);
       In_Storage: Integer := 0;
-      Sum_Of_All_Assemblies: Integer := 0;
       
       procedure Setup_Variables is
+         Sum_Of_All_Assemblies: Integer := 0;
+         Rounding_Error: Integer := Storage_Capacity;
       begin
 
    
@@ -175,9 +176,19 @@ procedure Simulation is
          Put_Line("Warehouse can accept max: ");      
          for I in Product_Type loop
             Assembly_Proportion(I) := Assembly_Proportion(I) * Storage_Capacity / Sum_Of_All_Assemblies;
-            Put_Line(Integer'Image(Assembly_Proportion(I)) & " pts of " & Product_Name(I));
+            Rounding_Error := Rounding_Error - Assembly_Proportion(I);
          end loop;
          
+         
+         for I in 1..Rounding_Error loop
+            Assembly_Proportion(I) := Assembly_Proportion(I) + 1;
+         end loop;
+         
+         Put_Line("------------------------------------------------------------");
+         for I in Product_Type loop
+            Put_Line(Integer'Image(Assembly_Proportion(I)) & " pts of " & Product_Name(I));
+         end loop;
+         Put_Line("------------------------------------------------------------");
          
          
       end Setup_Variables;
